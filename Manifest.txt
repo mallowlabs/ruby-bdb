@@ -29,6 +29,7 @@ examples/wordlist
 examples/wordtest
 examples/zeroc.rb
 lib/bdb.rb
+lib/bdb.so
 script/console
 script/destroy
 script/generate
