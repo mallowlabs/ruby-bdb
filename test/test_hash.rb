@@ -1,18 +1,19 @@
 #!/usr/bin/ruby
-$LOAD_PATH.unshift *%w{../src src tests}
-require 'bdb'
-require 'runit_'
+#$LOAD_PATH.unshift *%w{../src src tests}
+#require 'bdb'
+#require 'runit_'
+require File.dirname(__FILE__) + "/test_helper"
 
 $VERBOSE = nil
 
 module BDB
-   class BTCompare < Btree
-      def bdb_bt_compare(a, b)
-	 a <=> b
+   class HashRuby < Hash
+      def bdb_h_hash a
+	 a.hash
       end
    end
 
-   class AZ < Btree
+   class AZ < Hash
       def bdb_store_key(a)
 	 "xx_" + a
       end
@@ -43,30 +44,23 @@ print "\nVERSION of BDB is #{BDB::VERSION}\n"
 
 Inh = defined?(RUNIT) ? RUNIT : Test::Unit
 
-class TestBtree < Inh::TestCase
+class TestHash < Inh::TestCase
    def test_00_error
       assert_raises(BDB::Fatal, "invalid name") do
-	 BDB::Btree.new(".", nil, "a")
+	 BDB::Hash.new(".", nil, "a")
       end
       assert_raises(BDB::Fatal, "invalid Env") do
-	 BDB::Btree.open("tmp/aa", nil, "env" => 1)
+	 BDB::Hash.open("tmp/aa", nil, "env" => 1)
       end
-      assert_raises(TypeError) { BDB::Btree.new("tmp/aa", nil, "set_cachesize" => "a") }
-      assert_raises(TypeError) { BDB::Btree.new("tmp/aa", nil, "set_pagesize" => "a") }
-      assert_raises(TypeError) { BDB::Btree.new("tmp/aa", nil, "set_bt_minkey" => "a") }
-      assert_raises(BDB::Fatal) { BDB::Btree.new("tmp/aa", nil, "set_bt_compare" => "a") }
-      assert_raises(BDB::Fatal) { BDB::Btree.new("tmp/aa", nil, "set_bt_prefix" => "a") }
-      assert_raises(BDB::Fatal) { BDB::Btree.new("tmp/aa", nil, "set_fetch_key" => "a") }
-      assert_raises(BDB::Fatal) { BDB::Btree.new("tmp/aa", nil, "set_store_key" => "a") }
-      assert_raises(BDB::Fatal) { BDB::Btree.new("tmp/aa", nil, "set_fetch_value" => "a") }
-      assert_raises(BDB::Fatal) { BDB::Btree.new("tmp/aa", nil, "set_store_value" => "a") }
-      assert_raises(TypeError) { BDB::Btree.new("tmp/aa", nil, "set_lorder" => "a") }
+      assert_raises(BDB::Fatal) { BDB::Hash.open("tmp/aa", nil, "set_h_hash" => "a") }
+      assert_raises(TypeError) { BDB::Hash.open("tmp/aa", nil, "set_h_ffactor" => "a") }
+      assert_raises(TypeError) { BDB::Hash.open("tmp/aa", nil, "set_h_nelem" => "a") }
    end
+
    def test_01_init
-      assert_kind_of(BDB::Btree, $bdb = BDB::Btree.new("tmp/aa", nil, "a"), "<open>")
+      assert_kind_of(BDB::Hash, $bdb = BDB::Hash.new("tmp/aa", nil, "a"), "<open>")
    end
    def test_02_get_set
-      assert_equal(true, $bdb.empty?, "<empty>")
       assert_equal("alpha", $bdb["alpha"] = "alpha", "<set value>")
       assert_equal("alpha", $bdb["alpha"], "<retrieve value>")
       assert_equal(nil, $bdb["gamma"] = nil, "<set nil>")
@@ -83,7 +77,7 @@ class TestBtree < Inh::TestCase
       assert_equal("alpha", $bdb["alpha"], "<must not be changed>")
       assert($bdb.both?("alpha", "alpha"), "<has both>")
       assert_equal(["alpha", "alpha"], 
-		   $bdb.get("alpha", "alpha", BDB::GET_BOTH), 
+		   $bdb.get("alpha", "alpha", BDB::GET_BOTH),
 		   "<get both>")
       assert(! $bdb.both?("alpha", "beta"), "<don't has both>")
       assert(! $bdb.get("alpha", "beta", BDB::GET_BOTH), "<don't has both>")
@@ -104,7 +98,7 @@ class TestBtree < Inh::TestCase
       end
       assert(size == i, "<delete count>")
       assert_equal(0, $bdb.size, "<empty>")
-      $hash = {}
+       $hash = {}
       (33 .. 126).each do |i|
 	 key = i.to_s * 5
 	 $bdb[key] = i.to_s * 7
@@ -124,20 +118,20 @@ class TestBtree < Inh::TestCase
       assert_equal(arr0, arr1.reverse, "<reverse>")
       assert_equal($hash.invert, $bdb.invert, "<invert>")
       $bdb.each do |key, value|
-         if rand > 0.5
-            assert_equal($bdb, $bdb.delete(key), "<delete value>")
-            $hash.delete(key)
-         end
+	 if rand < 0.5
+	    assert_equal($bdb, $bdb.delete(key), "<delete value>")
+	    $hash.delete(key)
+	 end
       end
       assert_equal($bdb.size, $hash.size, "<size after load>")
       $bdb.each do |key, value|
 	 assert_equal($hash[key], value, "<after delete>")
       end
-      $hash.each do |key, value|
-	 assert($bdb.key?(key), "<key after delete>")
+      $bdb.each do |key, value|
+	 assert($hash.key?(key), "<key after delete>")
 	 assert_equal($bdb, $bdb.delete(key), "<delete value>")
       end
-   end
+  end
 
    def test_04_cursor
       array = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
@@ -155,16 +149,6 @@ class TestBtree < Inh::TestCase
 	 arr << x
       end
       assert_equal(array, arr.sort, "<reverse order>")
-      arr = []
-      $bdb.each_value("d") do |x|
-	 arr << x
-      end
-      assert_equal(array - ["a", "b", "c"], arr.sort, "<order>")
-      arr = []
-      $bdb.reverse_each_value("g") do |x|
-	 arr << x
-      end
-      assert_equal(array - ["h", "i"], arr.sort, "<reverse order>")
       arr = $bdb.reject {|k, v| k == "e" || v == "i" }
       has = array.reject {|k, v| k == "e" || k == "i" }
       assert_equal(has, arr.keys.sort, "<reject>")
@@ -176,9 +160,9 @@ class TestBtree < Inh::TestCase
 
    def test_05_reopen
       assert_equal(nil, $bdb.close, "<close>")
-      assert_kind_of(BDB::Btree, $bdb = BDB::Btree.open("tmp/aa", nil, "w", 
+      assert_kind_of(BDB::Hash, $bdb = BDB::Hash.open("tmp/aa", nil, "w", 
 	"set_flags" => BDB::DUP,
-	"set_dup_compare" => lambda {|a, b| a <=> b}),
+	"set_dup_compare" => lambda {|a, b| a <=> b}), 
         "<reopen with DB_DUP>")
       assert_equal(0, $bdb.size, "<must be 0 after reopen>")
    end
@@ -194,20 +178,7 @@ class TestBtree < Inh::TestCase
       assert_equal("aaa", $bdb["2"] = "aaa", "<set dup>")
       assert_equal("bbb", $bdb["2"] = "bbb", "<set dup>")
       assert_equal("aaaa", $bdb["3"] = "aaaa", "<set dup>")
-      rep = [["a", "b", "c", "d"], ['aa', 'bb', 'cc'], ['aaa', 'bbb'], ['aaaa']]
       if BDB::VERSION_MAJOR > 2 || BDB::VERSION_MINOR >= 6
-	 for i in [0, 1, 2, 3]
-	    k0, v0 = [], []
-	    $bdb.duplicates(i.to_s, false).each {|v| v0 << v}
-	    assert_equal(v0.sort, rep[i], "<dup val #{i}>")
-	    k0, v0 = [], []
-	    $bdb.each_dup(i.to_s) {|k, v| k0 << k; v0 << v}
-	    assert_equal(k0, [i.to_s] * (4 - i), "<dup key #{i}>")
-	    assert_equal(v0.sort, rep[i], "<dup val #{i}>")
-	    v0 = []
-	    $bdb.each_dup_value(i.to_s) {|v|  v0 << v}
-	    assert_equal(v0.sort, rep[i], "<dup val #{i}>")
-	 end
 	 assert_equal(4, $bdb.count("0"), "<count dup 0>")
 	 assert_equal(3, $bdb.count("1"), "<count dup 1>")
 	 assert_equal(2, $bdb.count("2"), "<count dup 2>")
@@ -223,7 +194,7 @@ class TestBtree < Inh::TestCase
 
    def test_07_in_memory
       assert_equal(nil, $bdb.close, "<close>")
-      assert_kind_of(BDB::Btree, $bdb = BDB::Btree.open, "<open in memory>")
+      assert_kind_of(BDB::Hash, $bdb = BDB::Hash.open(nil, nil), "<open in memory>")
       assert_equal(0, $bdb.size, "<must be 0 after reopen>")
    end
 
@@ -235,7 +206,7 @@ class TestBtree < Inh::TestCase
    end
 
    def test_09_partial_get
-      assert_kind_of(BDB::Btree, $bdb = BDB::Btree.open("tmp/aa", nil, "w"), "<reopen>")
+      assert_kind_of(BDB::Hash, $bdb = BDB::Hash.open("tmp/aa", nil, "w"), "<reopen>")
       {
 	 "red"	=> "boat",
 	 "green"=> "house",
@@ -296,45 +267,28 @@ class TestBtree < Inh::TestCase
       assert_equal("ABuQ", $bdb["green"], "<partial get>")
       assert_equal("XYZXYZ", $bdb["blue"], "<partial get>")
       assert_equal("KLMTU", $bdb["yellow"], "<partial get>")
-      $bdb.close
    end
 
-   def test_11_recnum
-      assert_kind_of(BDB::Btree, $bdb = BDB::Btree.open("tmp/aa", nil, "w",
-      "set_flags" => BDB::RECNUM), "<reopen RECNUM>")
-      assert_equal(0, $bdb.size, "<empty RECNUM>")
-      arr = ["A 0", "B 1", "C 2", "D 3", "E 4", "F 5", "G 6"]
-      i = 0
-      arr.each do |x|
-	 assert_equal(x, $bdb[i] = x, "<set recno>")
-	 i += 1;
-      end
-      i = 0
-      $bdb.each_value do |x|
-	 assert_equal(arr[i], x, "<each recno>")
-	 i += 1
-      end
-      $bdb.delete(3);
-      assert_equal(arr.size - 1, $bdb.size, "<size RECNUM>")
-      assert_equal(nil, $bdb[3], "<empty record>")
+   def test_11_unknown
       $bdb.close
-   end
-
-   def test_12_unknown
       $bdb = nil
-      assert_kind_of(BDB::Btree, unknown = BDB::Unknown.open("tmp/aa", nil, "r"), "<unknown>")
+      assert_kind_of(BDB::Hash, unknown = BDB::Unknown.open("tmp/aa", nil, "r"), "<unknown>")
       unknown.close
    end
 
-   def test_13_env
+   def test_12_env
       clean
       assert_kind_of(BDB::Env, $env = BDB::Env.open("tmp", BDB::CREATE|BDB::INIT_TRANSACTION))
-      assert_kind_of(BDB::Btree, $bdb = BDB::Btree.open("aa", nil, "a", "env" => $env), "<open>")
+      assert_kind_of(BDB::Hash, $bdb = BDB::Hash.open("aa", nil, "a", "env" => $env), "<open>")
    end
 
-   def test_14_txn_commit
+   def test_13_txn_commit
       assert_kind_of(BDB::Txn, txn = $env.begin, "<transaction>")
-      assert_kind_of(BDB::Btree, db = txn.assoc($bdb), "<assoc>")
+      assert_kind_of(BDB::Hash, db = txn.assoc($bdb), "<assoc>")
+      assert_equal(true, db.txn?, "<has transaction>")
+      assert_equal(txn, db.txn, "<transaction>")
+      assert_equal(true, db.env?, "<has environment>")
+      assert_equal($env, db.env, "<environment>")
       assert_equal("aa", db["aa"] = "aa", "<set>")
       assert_equal("bb", db["bb"] = "bb", "<set>")
       assert_equal("cc", db["cc"] = "cc", "<set>")
@@ -343,9 +297,9 @@ class TestBtree < Inh::TestCase
       assert_equal(3, $bdb.size, "<size after commit>")
    end
 
-   def test_15_txn_abort
+   def test_14_txn_abort
       assert_kind_of(BDB::Txn, txn = $env.begin, "<transaction>")
-      assert_kind_of(BDB::Btree, db = txn.assoc($bdb), "<assoc>")
+      assert_kind_of(BDB::Hash, db = txn.assoc($bdb), "<assoc>")
       assert_equal("aa", db["aa1"] = "aa", "<set>")
       assert_equal("bb", db["bb1"] = "bb", "<set>")
       assert_equal("cc", db["cc1"] = "cc", "<set>")
@@ -354,8 +308,7 @@ class TestBtree < Inh::TestCase
       assert_equal(3, $bdb.size, "<size after abort>")
    end
 
-=begin
-   def test_16_txn_abort2
+   def test_15_txn_abort2
       if BDB::VERSION_MAJOR == 2 && BDB::VERSION_MINOR < 7
 	 $stderr.print "skipping test for this version"
 	 return "pass"
@@ -375,14 +328,14 @@ class TestBtree < Inh::TestCase
       assert_equal(3, $bdb.size, "<size after abort>")
    end
 
-   def test_17_txn_commit2
+   def test_16_txn_commit2
       if BDB::VERSION_MAJOR == 2 && BDB::VERSION_MINOR < 7
 	 $stderr.print "skipping test for this version"
 	 return "pass"
       end
       $env.begin($bdb) do |txn, db|
 	 db["aa1"] = "aa"
-         db["bb1"] = "bb"
+	 db["bb1"] = "bb"
          assert_equal(5, db.size, "<size in txn>")
          txn.begin(db) do |txn1, db1|
             db1["cc1"] = "cc"
@@ -393,12 +346,9 @@ class TestBtree < Inh::TestCase
          assert_fail("<after an commit>")
       end
       assert_equal(6, $bdb.size, "<size after commit>")
-      assert_equal(nil, $bdb.close, "<close>")
-      $env.close
    end
-=end
 
-   def intern_btree_delete
+   def intern_hash_delete
       $hash = {}
       File.foreach("examples/wordtest") do |line|
 	 line.chomp!
@@ -416,29 +366,33 @@ class TestBtree < Inh::TestCase
       end
    end
 
-   def test_18_btree_delete
+   def test_17_hash_delete
+      assert_equal(true, $bdb.env?, "<has env>")
+      assert_equal($env, $bdb.env, "<env>")
+      assert_equal(nil, $bdb.close, "<close>")
+      $env.close
       clean
-      assert_kind_of(BDB::BTCompare, 
-		     $bdb = BDB::BTCompare.open("tmp/aa", nil, "w", 
+      assert_kind_of(BDB::HashRuby, 
+		     $bdb = BDB::HashRuby.open("tmp/aa", nil, "w", 
 					       "set_pagesize" => 1024,
 					       "set_cachesize" => [0, 32 * 1024, 0]),
 		     "<open>")
-      intern_btree_delete
+      assert_equal(false, $bdb.env?, "<has env>")
+      assert_equal(nil, $bdb.env, "<env>")
+      intern_hash_delete
       $bdb.close
    end
 
-   def test_19_btree_delete
-      clean
-      assert_kind_of(BDB::Btree, 
-		     $bdb = BDB::Btree.open("tmp/aa", nil, "w", 
-					    "set_bt_compare" => proc {|a, b| a <=> b},
-					    "set_pagesize" => 1024,
-					    "set_cachesize" => [0, 32 * 1024, 0]),
-		     "<open>")
-      intern_btree_delete
+   def test_18_hash_delete
+      assert_kind_of(BDB::Hash,
+		     $bdb = BDB::Hash.open("tmp/aa", nil, "w",
+					   "set_h_hash" => proc {|a| a.hash },
+					   "set_pagesize" => 1024,
+					   "set_cachesize" => [0, 32 * 1024, 0]))
+      intern_hash_delete
    end
 
-   def test_20_index
+   def test_18_index
       lines = $hash.keys
       array = []
       10.times do
@@ -446,13 +400,13 @@ class TestBtree < Inh::TestCase
 	 array.push h
 	 assert_equal($hash.index(h.reverse), $bdb.index(h.reverse), "<index>")
       end
-      assert_equal($hash.indexes(array), $bdb.indexes(array), "<indexes>")
+      assert_equal($hash.indexes(*array), $bdb.indexes(*array), "<indexes>")
       array.each do |k|
 	 assert($bdb.has_both?(k, k.reverse), "<has both>")
       end
    end
 
-   def test_21_convert
+   def test_19_convert
       h = $bdb.to_hash
       h.each do |k, v|
 	 assert_equal(v, $hash[k], "<to_hash>")
@@ -469,7 +423,7 @@ class TestBtree < Inh::TestCase
    end
 
    if BDB::VERSION_MAJOR == 3 && BDB::VERSION_MINOR >= 3
-      def test_22_blurb
+      def test_20_blurb
 	 $bdb.each(nil, 10) do |k, v|
 	    assert_equal($hash[k], v, "<value>")
 	 end
@@ -482,11 +436,11 @@ class TestBtree < Inh::TestCase
       end
    end
 
-   def test_23_sh
+   def test_21_sh
       val = 'a' .. 'zz'
       assert_equal(nil, $bdb.close, "<close>")
       File::unlink('tmp/aa') if FileTest.file?('tmp/aa')
-      assert_kind_of(BDB::Btree, $bdb = BDB::AZ.open("tmp/aa", nil, "w"), "<sh>")
+      assert_kind_of(BDB::Hash, $bdb = BDB::AZ.open("tmp/aa", nil, "w"), "<sh>")
       val.each do |l|
 	 assert_equal(l, $bdb[l] = l, "<store>")
       end
@@ -494,7 +448,7 @@ class TestBtree < Inh::TestCase
 	 assert_equal(k, v, "<fetch>")
       end
       assert_equal(nil, $bdb.close, "<close>")
-      assert_kind_of(BDB::Btree, $bdb = BDB::Btree.open("tmp/aa"), "<sh>")
+      assert_kind_of(BDB::Hash, $bdb = BDB::Hash.open("tmp/aa"), "<sh>")
       val.each do |l|
 	 assert_equal("yy_#{l}", $bdb["xx_#{l}"], "<fetch value>")
       end
@@ -509,6 +463,5 @@ class TestBtree < Inh::TestCase
 end
 
 if defined?(RUNIT)
-   RUNIT::CUI::TestRunner.run(TestBtree.suite)
+   RUNIT::CUI::TestRunner.run(TestHash.suite)
 end
-
