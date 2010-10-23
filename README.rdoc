@@ -6,6 +6,7 @@
 
 This is an interface to Berkeley DB, distributed by Sleepycat
 (http://www.sleepycat.com/)
+For Windows version.
 
 == PROBLEMS:
 
@@ -22,10 +23,9 @@ see EXAMPLES.
 
 == INSTALL:
 
-* $ sudo gem install bdb-x.x.x.gem -- --with-db-dir=<BDB_HOME>
-* Mac OS X & MacPorts
-  * $ sudo env $ARCHFLAGS="--arch <ARC>" gem install bdb-x.x.x.gem -- --with-db-dir=<BDB_HOME>
-You need to specify --with-db-dir option.
+* > gem install bdb-x.x.x.gem
+* > copy <GEM_INSTALL_DIR>\bdb-x.x.x\dll\libdb43.dll <RUBY_INSTALL_DIR>\bin\
+(You need to copy libdb43.dll to a directory in %PATH%)
 
 == EXAMPLES:
 
@@ -49,5 +49,10 @@ You can redistribute it and/or modify it under the same term as Ruby.
 
 * Guy Decoux <ts@moulon.inra.fr>
   * http://raa.ruby-lang.org/project/bdb/
+* Soutaro Matsumoto <matsumoto@soutaro.com> (build for Windows)
+  * http://soutaro.com/gonzui-win32/
 * mallowlabs <mallwolabs@gmail.com> (modified for Gem version)
   * http://github.com/mallowlabs/bdb/
+
+=== Library license:
+See COPYING-LIB.txt.
