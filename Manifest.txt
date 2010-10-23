@@ -1,8 +1,6 @@
 COPYING-LIB.txt
 Changes
-History.txt
 Manifest.txt
-README.en
 README.rdoc
 Rakefile
 bdb.html
