@@ -29,12 +29,18 @@ You need to specify --with-db-dir option.
 
 == EXAMPLES:
 
-* examples/basic.rb        simple access method
-* examples/recno.rb        access to flat file
-* examples/cursor.rb       direct cursor access
-* examples/txn.rb          transaction
-* examples/join.rb         join (need db >= 2.6)
-* examples/log.rb          log file
+* examples/basic.rb
+  * simple access method
+* examples/recno.rb
+  * access to flat file
+* examples/cursor.rb
+  * direct cursor access
+* examples/txn.rb
+  * transaction
+* examples/join.rb
+  * join (need db >= 2.6)
+* examples/log.rb
+  * log file
 
 == LICENSE:
 
@@ -42,6 +48,6 @@ This extension module is copyrighted free software by Guy Decoux
 You can redistribute it and/or modify it under the same term as Ruby.
 
 * Guy Decoux <ts@moulon.inra.fr>
- * http://raa.ruby-lang.org/project/bdb/
+  * http://raa.ruby-lang.org/project/bdb/
 * mallowlabs <mallwolabs@gmail.com> (modified for Gem version)
- * http://github.com/mallowlabs/bdb/
+  * http://github.com/mallowlabs/bdb/
