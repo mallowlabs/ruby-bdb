@@ -2,9 +2,10 @@ Makefile
 *.o
 *.bundle
 *.so
-*.dll
+ext/**/*.dll
+lib/**/*.dll
 pkg
 doc
 .DS_Store
 mkmf.log
-
+tmp
