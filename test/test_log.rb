@@ -1,7 +1,8 @@
 #!/usr/bin/ruby
-$LOAD_PATH.unshift *%w{../src src tests}
-require 'bdb'
-require 'runit_'
+#$LOAD_PATH.unshift *%w{../src src tests}
+#require 'bdb'
+#require 'runit_'
+require File.dirname(__FILE__) + "/test_helper"
 
 def clean
    Dir.foreach('tmp') do |x|

@@ -1,13 +1,8 @@
 #!/usr/bin/ruby
 
-require 'pp'
-pp ARGV
-
-
 ARGV.collect! {|x| x.sub(/^--with-db-prefix=/, "--with-db-dir=") }
 
 require 'mkmf'
-pp Config::CONFIG["arch"]
 
 if ARGV.include?('--help') || ARGV.include?('-h')
    puts <<EOT

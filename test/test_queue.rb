@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
-$LOAD_PATH.unshift *%w{../src src tests}
-require 'bdb'
+#$LOAD_PATH.unshift *%w{../src src tests}
+#require 'bdb'
+require File.dirname(__FILE__) + "/test_helper"
 
 print "\nVERSION of BDB is #{BDB::VERSION}\n"
 if BDB::VERSION_MAJOR < 3
@@ -8,7 +9,7 @@ if BDB::VERSION_MAJOR < 3
    exit
 end
 
-require 'runit_'
+#require 'runit_'
 
 def clean
    Dir.foreach('tmp') do |x|
