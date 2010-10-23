@@ -39,7 +39,6 @@ ext/bdb/extconf.rb
 ext/bdb/features.rb
 ext/bdb/lock.c
 ext/bdb/log.c
-ext/bdb/mkmf.log
 ext/bdb/recnum.c
 ext/bdb/sequence.c
 ext/bdb/transaction.c
