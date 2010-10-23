@@ -1,9 +1,0 @@
-<entry index='s'>
-<name>Scripting Language</name>
-<reference>script</reference>
-<content>
-    Interpreter which handles batch operations after the ((script|Script)).
-
-    Man is also a scripting language on the point which reads script.
-</content>
-</entry>
