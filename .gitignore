@@ -1,7 +1,6 @@
 Makefile
 *.o
 *.bundle
-*.so
 ext/**/*.dll
 lib/**/*.dll
 pkg
